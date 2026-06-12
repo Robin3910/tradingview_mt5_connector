@@ -1,0 +1,28 @@
+flask:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+
+mt5_connections:
+  - id: "MT5_001"
+    ip: "127.0.0.1"
+    port: 9000
+    description: "主账户"
+    enabled: true
+  - id: "MT5_002"
+    ip: "127.0.0.1"
+    port: 9001
+    description: "备用账户"
+    enabled: false
+
+# 交易默认配置
+trading:
+  default_symbol: "EURUSD"
+  default_volume: 0.1
+  default_sl_points: 100
+  default_tp_points: 200
+
+# 安全设置
+security:
+  api_token: ""  # 可选，留空则不验证
+  allowed_ips: []  # 允许的 IP 列表，空则不限制

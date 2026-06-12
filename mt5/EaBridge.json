@@ -1,0 +1,74 @@
+{
+    "name": "EaBridge",
+    "version": "1.0.0",
+    "description": "TradingView-MT5 Bridge EA",
+    "author": "TradingView-MT5 Bridge",
+    "parameters": [
+        {
+            "name": "InpSocketServerIP",
+            "type": "string",
+            "default": "127.0.0.1",
+            "description": "Python服务器IP地址"
+        },
+        {
+            "name": "InpSocketServerPort",
+            "type": "int",
+            "default": 9000,
+            "description": "Python服务器端口"
+        },
+        {
+            "name": "InpSymbol",
+            "type": "string",
+            "default": "EURUSD",
+            "description": "交易品种"
+        },
+        {
+            "name": "InpMagicNumber",
+            "type": "ulong",
+            "default": 20250612,
+            "description": "魔术号码（用于标识此EA的订单）"
+        },
+        {
+            "name": "InpMaxPositions",
+            "type": "int",
+            "default": 5,
+            "description": "最大持仓数量"
+        },
+        {
+            "name": "InpLotSize",
+            "type": "double",
+            "default": 0.1,
+            "description": "默认交易量"
+        },
+        {
+            "name": "InpStopLossPoints",
+            "type": "int",
+            "default": 100,
+            "description": "默认止损点数（MT5点）"
+        },
+        {
+            "name": "InpTakeProfitPoints",
+            "type": "int",
+            "default": 200,
+            "description": "默认止盈点数（MT5点）"
+        },
+        {
+            "name": "InpAutoReconnect",
+            "type": "bool",
+            "default": true,
+            "description": "断线后自动重连"
+        },
+        {
+            "name": "InpReconnectInterval",
+            "type": "int",
+            "default": 5,
+            "description": "重连间隔（秒）"
+        }
+    ],
+    "notes": [
+        "此EA需要复制到 MT5/MQL5/Experts/ 目录",
+        "编译前确保 EaBridge.mqh 与 EaBridge.mq5 在同一目录",
+        "EA启动后会自动连接Python服务器",
+        "连接成功后，EA会接收并执行来自TradingView的交易指令"
+    ]
+}

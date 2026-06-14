@@ -1,0 +1,27 @@
+{
+    "clangd.fallbackFlags": [
+        "-xc++",
+        "-std=c++17",
+        "-D__MQL__",
+        "-D__MQL5__",
+        "-include/Users/a1-6/.cursor/extensions/ngsoftware.mql-clangd-1.1.59-universal/files/mql_clangd_compat.h",
+        "-fms-extensions",
+        "-fms-compatibility",
+        "-ferror-limit=0",
+        "-Wno-invalid-token-paste",
+        "-Wno-unused-value",
+        "-Wno-unknown-pragmas",
+        "-Wno-writable-strings",
+        "-Xclang",
+        "-Wno-invalid-pp-directive",
+        "-Wno-unknown-directives",
+        "-Wno-language-extension-token",
+        "-I/Users/a1-6/Desktop/桌面/workspace/tradingview_mt5_connector",
+        "-I/Users/a1-6/Desktop/桌面/workspace/tradingview_mt5_connector/Include"
+    ],
+    "files.associations": {
+        "*.mqh": "cpp",
+        "*.mq4": "cpp",
+        "*.mq5": "cpp"
+    }
+}

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 """
 消息处理模块
 解析 TradingView 消息并转换为 MT5 命令
@@ -5,6 +8,8 @@
 
 import logging
 import json
+import threading
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +21,16 @@ class MessageHandler:
         self.config = config
         self.trading_config = config.get('trading', {})
         self.socketio = socketio
-
+        self.sequence = 0
+        self.seq_lock = threading.Lock()
+        self.pending_acks = {}
+        
+    def get_next_sequence(self):
+        """获取下一个序列号"""
+        with self.seq_lock:
+            self.sequence += 1
+            return self.sequence
+            
     def process_message(self, data, mt5_clients):
         try:
             action = data.get('action', '').upper()
@@ -27,17 +41,20 @@ class MessageHandler:
             if action not in ['BUY', 'SELL', 'CLOSE', 'CLOSE_ALL']:
                 return {'success': False, 'error': f'Invalid action: {action}'}
 
-            account_id = data.get('account_id', 'MT5_001')
-
-            if account_id not in mt5_clients:
-                available = list(mt5_clients.keys())
-                if available:
-                    account_id = available[0]
-                    logger.warning(f"指定的账户 {data.get('account_id')} 不存在，使用默认: {account_id}")
-                else:
+            # 获取客户端
+            account_id = data.get('account_id')
+            
+            if account_id:
+                # 查找指定账户
+                if account_id not in mt5_clients:
+                    return {'success': False, 'error': f'Account {account_id} not found'}
+                client = mt5_clients[account_id]
+            else:
+                # 使用第一个可用连接
+                if not mt5_clients:
                     return {'success': False, 'error': 'No MT5 connection available'}
-
-            client = mt5_clients[account_id]
+                client = list(mt5_clients.values())[0]
+                account_id = client.conn_id
 
             if not client.is_connected():
                 return {'success': False, 'error': f'MT5 {account_id} not connected'}
@@ -47,60 +64,43 @@ class MessageHandler:
             sl_points = int(data.get('sl_points', self.trading_config.get('default_sl_points', 0)))
             tp_points = int(data.get('tp_points', self.trading_config.get('default_tp_points', 0)))
             comment = data.get('comment', 'TV_Signal')
+            
+            seq = self.get_next_sequence()
 
-            if action in ['BUY', 'SELL']:
-                success = client.send_order(
-                    symbol=symbol,
-                    order_type=action,
-                    volume=volume,
-                    sl_points=sl_points,
-                    tp_points=tp_points,
-                    comment=comment
-                )
-
-                if success:
-                    return {
-                        'success': True,
-                        'details': {
-                            'action': action,
-                            'symbol': symbol,
-                            'volume': volume,
-                            'account': account_id
-                        }
-                    }
-                else:
-                    return {'success': False, 'error': 'Failed to send order to MT5'}
-
+            if action == 'BUY':
+                order_type = 0  # ORDER_TYPE_BUY
+                msg = f"OPEN|{symbol}|{order_type}|{volume}|{sl_points}|{tp_points}|{comment}|SEQ:{seq}"
+                
+            elif action == 'SELL':
+                order_type = 1  # ORDER_TYPE_SELL
+                msg = f"OPEN|{symbol}|{order_type}|{volume}|{sl_points}|{tp_points}|{comment}|SEQ:{seq}"
+                
             elif action == 'CLOSE':
                 ticket = data.get('ticket')
                 if not ticket:
                     return {'success': False, 'error': 'Missing ticket for close action'}
-
-                success = client.close_order(ticket)
-                if success:
-                    return {
-                        'success': True,
-                        'details': {
-                            'action': 'CLOSE',
-                            'ticket': ticket,
-                            'account': account_id
-                        }
-                    }
-                else:
-                    return {'success': False, 'error': 'Failed to send close order to MT5'}
-
+                msg = f"CLOSE|{ticket}|SEQ:{seq}"
+                
             elif action == 'CLOSE_ALL':
-                success = client.close_all_orders()
-                if success:
-                    return {
-                        'success': True,
-                        'details': {
-                            'action': 'CLOSE_ALL',
-                            'account': account_id
-                        }
+                msg = f"CLOSE_ALL|SEQ:{seq}"
+            
+            # 发送消息
+            logger.info(f"发送命令到 {account_id}: {msg}")
+            
+            if client.send_message(msg):
+                return {
+                    'success': True,
+                    'details': {
+                        'action': action,
+                        'symbol': symbol if action in ['BUY', 'SELL'] else None,
+                        'ticket': data.get('ticket') if action == 'CLOSE' else None,
+                        'volume': volume if action in ['BUY', 'SELL'] else None,
+                        'account': account_id,
+                        'sequence': seq
                     }
-                else:
-                    return {'success': False, 'error': 'Failed to send close all orders to MT5'}
+                }
+            else:
+                return {'success': False, 'error': 'Failed to send message to MT5'}
 
         except Exception as e:
             logger.error(f"消息处理错误: {e}", exc_info=True)

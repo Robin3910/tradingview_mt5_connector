@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 """
 MT5 Socket 客户端模块
 管理与 MT5 EA 的 TCP Socket 连接，支持心跳检测
